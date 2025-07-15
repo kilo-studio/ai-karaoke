@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import * as cheerio from "cheerio";
 
-// src/app/api/lyrics/route.js
+// src/app/api/lyrics/POST.js
 export async function POST(req) {
   console.log("📨 POST /api/lyrics received");
   const { title, artist, theme, provider = "lyrics.ovh" } = await req.json();
@@ -150,11 +150,4 @@ ${lyrics}`;
       headers: { "Content-Type": "application/json" },
     });
   }
-}
-// Simple GET method to help debug deployment and route accessibility
-export async function GET(req) {
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" }
-  });
 }
