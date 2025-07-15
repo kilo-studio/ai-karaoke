@@ -175,10 +175,10 @@ export default function Home() {
           onChange={(e) => setModel(e.target.value)}
           className="border p-1 rounded"
         >
-          <option value="tngtech/deepseek-r1t2-chimera:free">deepseek</option>
-          <option value="meta-llama/llama-3.2-3b-instruct:free">llama</option>
-          <option value="google/gemini-2.0-flash-exp:free">gemini</option>
-          <option value="openai/gpt-4o">chatgpt-4.1</option>
+          <option value="tngtech/deepseek-r1t2-chimera:free">deepseek (FREE)</option>
+          <option value="meta-llama/llama-3.2-3b-instruct:free">llama (FREE - rate limited)</option>
+          <option value="google/gemini-2.0-flash-exp:free">gemini (FREE - rate limited)</option>
+          <option value="openai/gpt-4o">chatgpt-4.1 ($)</option>
         </select>
       </div>
 
