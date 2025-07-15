@@ -1,10 +1,8 @@
-
-
 {
   "rewrites": [
     {
       "source": "/api/lyrics",
-      "destination": "/api/lyrics"
+      "destination": "/api/lyrics/route.js"
     }
   ],
   "headers": [
