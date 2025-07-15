@@ -152,7 +152,7 @@ ${lyrics}`;
   }
 }
 // Simple GET method to help debug deployment and route accessibility
-export async function GET() {
+export async function GET(req) {
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" }
