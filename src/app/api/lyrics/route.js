@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import * as cheerio from "cheerio";
 
 // src/app/api/lyrics/route.js
