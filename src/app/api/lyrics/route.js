@@ -1,12 +1,19 @@
-export const dynamic = "force-dynamic";
 import * as cheerio from "cheerio";
 
-// src/app/api/lyrics/POST.js
+export const dynamic = "force-dynamic";
+
 export async function POST(req) {
   console.log("📨 POST /api/lyrics received");
+
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return new Response(JSON.stringify({ error: "Invalid content type" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const { title, artist, theme, provider = "lyrics.ovh" } = await req.json();
 
-  // Normalize title and artist
   const cleanTitle = title.replace(/\(.*?\)|\[.*?\]/g, '').split('feat.')[0].trim();
   const cleanArtist = artist.replace(/\(.*?\)|\[.*?\]/g, '').split('feat.')[0].trim();
 
@@ -80,7 +87,6 @@ Original lyrics:
 ${lyrics}`;
 
   try {
-    // AI request block: Route to OpenAI if model starts with "openai/", otherwise use OpenRouter
     if (model.startsWith("openai/")) {
       const openaiModel = model.split("/")[1];
 
@@ -99,20 +105,19 @@ ${lyrics}`;
       const data = await response.json();
       console.log("🧠 OpenAI response:", JSON.stringify(data, null, 2));
 
-      const lyrics = data.choices?.[0]?.message?.content?.trim();
-      if (!lyrics) {
+      const aiLyrics = data.choices?.[0]?.message?.content?.trim();
+      if (!aiLyrics) {
         return new Response(JSON.stringify({ lyrics: null }), {
           status: 500,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      return new Response(JSON.stringify({ lyrics }), {
+      return new Response(JSON.stringify({ lyrics: aiLyrics }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     } else {
-      // OpenRouter fallback
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -130,15 +135,15 @@ ${lyrics}`;
       const data = await response.json();
       console.log("🧠 AI response:", JSON.stringify(data, null, 2));
 
-      const lyrics = data.choices?.[0]?.message?.content?.trim();
-      if (!lyrics) {
+      const aiLyrics = data.choices?.[0]?.message?.content?.trim();
+      if (!aiLyrics) {
         return new Response(JSON.stringify({ lyrics: null }), {
           status: 500,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      return new Response(JSON.stringify({ lyrics }), {
+      return new Response(JSON.stringify({ lyrics: aiLyrics }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
