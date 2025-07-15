@@ -151,3 +151,7 @@ ${lyrics}`;
     });
   }
 }
+
+export async function GET() {
+  return new Response("Lyrics endpoint is alive", { status: 200 });
+}
