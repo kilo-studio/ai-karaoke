@@ -20,13 +20,13 @@ const Button = ({ variant = "default", className, ...props }) => {
 const Input = (props) => (
   <input
     {...props}
-    className={`border p-2 rounded w-full ${props.className || ""}`}
+    className={`border p-2 rounded w-full bg-white text-black dark:bg-gray-800 dark:text-white ${props.className || ""}`}
   />
 );
 
 const Card = (props) => (
   <div
-    className={`border rounded shadow p-4 bg-white ${props.className || ""}`}
+    className={`border rounded shadow p-4 bg-white text-black dark:bg-gray-800 dark:text-white ${props.className || ""}`}
   >
     {props.children}
   </div>
@@ -192,11 +192,11 @@ export default function Home() {
       />
 
       {searchResults.length > 0 && (
-        <ul className="mb-4 border rounded p-2 bg-white max-h-60 overflow-y-auto">
+        <ul className="mb-4 border rounded p-2 bg-white text-black dark:bg-gray-800 dark:text-white max-h-60 overflow-y-auto">
           {searchResults.map((song) => (
             <li
               key={song.id}
-              className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+              className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded"
               onClick={() => {
                 setSelectedSong(song);
                 setSongQuery(`${song.title} — ${song.artist}`);
