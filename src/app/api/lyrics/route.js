@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -6,10 +7,7 @@ export async function POST(req) {
   console.log("📨 POST /api/lyrics received");
 
   if (!req.headers.get("content-type")?.includes("application/json")) {
-    return new Response(JSON.stringify({ error: "Invalid content type" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
   }
 
   const body = await req.json();
@@ -31,10 +29,7 @@ export async function POST(req) {
       if (!lyricsRes.ok) {
         const html = await lyricsRes.text();
         console.warn("⚠️ Lyrics.ovh returned non-JSON response:", html);
-        return new Response(JSON.stringify({ lyrics: null, error: "Lyrics not found." }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return NextResponse.json({ lyrics: null, error: "Lyrics not found." }, { status: 404 });
       }
 
       const lyricsData = await lyricsRes.json();
@@ -43,7 +38,8 @@ export async function POST(req) {
       console.log("🔑 GENIUS_ACCESS_TOKEN:", process.env.GENIUS_ACCESS_TOKEN?.slice(0, 6));
       console.log("🔍 Genius search URL:", `https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);
       if (!process.env.GENIUS_ACCESS_TOKEN) {
-        console.error("❌ GENIUS_ACCESS_TOKEN is undefined in runtime!");
+        console.error("❌ GENIUS_ACCESS_TOKEN is undefined!");
+        return NextResponse.json({ lyrics: null, error: "GENIUS_ACCESS_TOKEN not set" }, { status: 500 });
       }
       const geniusRes = await fetch(`https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`, {
         headers: {
@@ -53,20 +49,14 @@ export async function POST(req) {
       if (!geniusRes.ok) {
         const errorText = await geniusRes.text();
         console.error("❌ Genius API error:", errorText);
-        return new Response(JSON.stringify({ lyrics: null, error: "Failed to fetch from Genius" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return NextResponse.json({ lyrics: null, error: "Failed to fetch from Genius" }, { status: 500 });
       }
       const geniusData = await geniusRes.json();
       const songPath = geniusData.response?.hits?.[0]?.result?.path;
 
       if (!songPath) {
         console.warn("⚠️ No song path returned from Genius.");
-        return new Response(JSON.stringify({ lyrics: null, error: "Song not found on Genius." }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return NextResponse.json({ lyrics: null, error: "Song not found on Genius." }, { status: 404 });
       }
 
       if (songPath) {
@@ -78,17 +68,11 @@ export async function POST(req) {
     }
   } catch (lyricsError) {
     console.error("❌ Error fetching lyrics:", lyricsError);
-    return new Response(JSON.stringify({ lyrics: null, error: "Failed to fetch lyrics." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ lyrics: null, error: "Failed to fetch lyrics." }, { status: 500 });
   }
 
   if (!lyrics) {
-    return new Response(JSON.stringify({ lyrics: null, error: "Original lyrics not found." }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ lyrics: null, error: "Original lyrics not found." }, { status: 404 });
   }
 
   const allowedModels = [
@@ -130,16 +114,10 @@ ${lyrics}`;
 
       const aiLyrics = data.choices?.[0]?.message?.content?.trim();
       if (!aiLyrics) {
-        return new Response(JSON.stringify({ lyrics: null }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return NextResponse.json({ lyrics: null }, { status: 500 });
       }
 
-      return new Response(JSON.stringify({ lyrics: aiLyrics }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json({ lyrics: aiLyrics }, { status: 200 });
     } else {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -160,23 +138,14 @@ ${lyrics}`;
 
       const aiLyrics = data.choices?.[0]?.message?.content?.trim();
       if (!aiLyrics) {
-        return new Response(JSON.stringify({ lyrics: null }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return NextResponse.json({ lyrics: null }, { status: 500 });
       }
 
-      return new Response(JSON.stringify({ lyrics: aiLyrics }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json({ lyrics: aiLyrics }, { status: 200 });
     }
   } catch (err) {
     console.error("❌ Error during AI request:", err);
-    return new Response(JSON.stringify({ lyrics: null }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ lyrics: null }, { status: 500 });
   }
 }
 
