@@ -41,30 +41,39 @@ export async function POST(req) {
         console.error("❌ GENIUS_ACCESS_TOKEN is undefined!");
         return NextResponse.json({ lyrics: null, error: "GENIUS_ACCESS_TOKEN not set" }, { status: 500 });
       }
+      console.log("🌐 Fetching from Genius API...");
       const geniusRes = await fetch(`https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`, {
         headers: {
           Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`
         }
       });
+      console.log("✅ Genius API responded:", geniusRes.status);
+
       if (!geniusRes.ok) {
         const errorText = await geniusRes.text();
         console.error("❌ Genius API error:", errorText);
         return NextResponse.json({ lyrics: null, error: "Failed to fetch from Genius" }, { status: 500 });
       }
+
       const geniusData = await geniusRes.json();
+      console.log("📦 Genius API data received");
+
       const songPath = geniusData.response?.hits?.[0]?.result?.path;
+      console.log("🎯 Song path:", songPath);
 
       if (!songPath) {
         console.warn("⚠️ No song path returned from Genius.");
         return NextResponse.json({ lyrics: null, error: "Song not found on Genius." }, { status: 404 });
       }
 
-      if (songPath) {
-        const lyricsPage = await fetch(`https://genius.com${songPath}`);
-        const html = await lyricsPage.text();
-        const $ = cheerio.load(html);
-        lyrics = $(".lyrics").text().trim() || $('[data-lyrics-container="true"]').text().trim();
-      }
+      console.log("🌐 Fetching lyrics page from Genius.com...");
+      const lyricsPage = await fetch(`https://genius.com${songPath}`);
+      const html = await lyricsPage.text();
+      console.log("📄 Genius page fetched. Parsing HTML...");
+
+      const $ = cheerio.load(html);
+      lyrics = $(".lyrics").text().trim() || $('[data-lyrics-container="true"]').text().trim();
+      console.log("🎤 Extracted lyrics:", lyrics?.slice(0, 100));
     }
   } catch (lyricsError) {
     console.error("❌ Error fetching lyrics:", lyricsError);
