@@ -48,51 +48,26 @@ export async function POST(req) {
 
       const lyricsData = await lyricsRes.json();
       lyrics = lyricsData?.lyrics?.trim();
-    } else if (provider === "genius") {
-      console.log("🔑 GENIUS_ACCESS_TOKEN:", process.env.GENIUS_ACCESS_TOKEN?.slice(0, 6));
-      console.log("🔍 Genius search URL:", `https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);
-      if (!process.env.GENIUS_ACCESS_TOKEN) {
-        console.error("❌ GENIUS_ACCESS_TOKEN is undefined!");
-        return NextResponse.json({ lyrics: null, error: "GENIUS_ACCESS_TOKEN not set" }, { status: 500 });
-      }
-      console.log("🌐 Fetching from Genius API...");
-      const geniusRes = await fetch(`https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`
-        }
-      });
-      console.log("✅ Genius API responded:", geniusRes.status);
-
-      if (!geniusRes.ok) {
-        const errorText = await geniusRes.text();
-        console.error("❌ Genius API error:", errorText);
-        return NextResponse.json({ lyrics: null, error: "Failed to fetch from Genius" }, { status: 500 });
+    } else if (provider === "audd") {
+      const auddApiKey = process.env.AUDD_API_KEY;
+      if (!auddApiKey) {
+        console.error("❌ AUDD_API_KEY is undefined!");
+        return NextResponse.json({ lyrics: null, error: "AUDD_API_KEY not set" }, { status: 500 });
       }
 
-      const geniusData = await geniusRes.json();
-      console.log("📦 Genius API data received");
+      const auddURL = `https://api.audd.io/findLyrics/?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}&api_token=${auddApiKey}`;
+      console.log("📥 Requesting lyrics from AudD:", auddURL);
 
-      const songPath = geniusData.response?.hits?.[0]?.result?.path;
-      console.log("🎯 Song path:", songPath);
+      const auddRes = await fetch(auddURL);
 
-      if (!songPath) {
-        console.warn("⚠️ No song path returned from Genius.");
-        return NextResponse.json({ lyrics: null, error: "Song not found on Genius." }, { status: 404 });
+      if (!auddRes.ok) {
+        const errorText = await auddRes.text();
+        console.warn("⚠️ AudD returned error:", errorText);
+        return NextResponse.json({ lyrics: null, error: "Lyrics not found from AudD." }, { status: 404 });
       }
 
-      console.log("🌐 Fetching lyrics page from Genius.com...");
-      const lyricsPage = await fetch(`https://genius.com${songPath}`, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-        }
-      });
-      const html = await lyricsPage.text();
-      console.log("📄 Genius page fetched. Parsing HTML...");
-
-      const $ = cheerio.load(html);
-      const containers = $('[data-lyrics-container="true"]');
-      lyrics = containers.map((i, el) => $(el).text()).get().join('\n').trim();
-      console.log("🎤 Extracted lyrics:", lyrics?.slice(0, 100));
+      const auddData = await auddRes.json();
+      lyrics = auddData?.result?.lyrics?.trim();
     }
   } catch (lyricsError) {
     console.error("❌ Error fetching lyrics:", lyricsError);

@@ -39,7 +39,7 @@ const CardContent = (props) => (
 const suggestedThemes = [
   "Cats",
   "Cheese",
-  "Breakups",
+  "Zoom fatigue",
   "Corporate life",
   "Getting adbucted by aliens",
   "Taco Tuesday",
@@ -165,6 +165,7 @@ export default function Home() {
         >
           <option value="lyrics.ovh">lyrics.ovh</option>
           <option value="flylyrics">flylyrics</option>
+          <option value="audd">AudD ($)</option>
         </select>
       </div>
 
