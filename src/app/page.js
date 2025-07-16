@@ -56,6 +56,7 @@ export default function Home() {
   const [demoMode, setDemoMode] = useState(true);
   const [lyricsProvider, setLyricsProvider] = useState("lyrics.ovh");
   const [model, setModel] = useState("tngtech/deepseek-r1t2-chimera:free");
+  const [statusMessage, setStatusMessage] = useState("");
 
   const searchSongs = async (query) => {
     setSongQuery(query);
@@ -100,6 +101,7 @@ export default function Home() {
     if (!selectedSong) return;
     setLoading(true);
     setGeneratedLyrics("");
+    setStatusMessage(`🎵 Finding lyrics to "${selectedSong.title}"...`);
     const theme = customTheme || chosenTheme;
 
     if (demoMode) {
@@ -107,6 +109,7 @@ export default function Home() {
       setTimeout(() => {
         setGeneratedLyrics(lyrics);
         setLoading(false);
+        setStatusMessage("");
       }, 500);
       return;
     }
@@ -135,11 +138,14 @@ export default function Home() {
 
       const data = await response.json();
       setGeneratedLyrics(data.lyrics || "No lyrics returned.");
+      setStatusMessage("✅ Lyrics found!");
+      setStatusMessage(`🎤 Using ${lyricsProvider} to remix "${selectedSong.title}" to the theme: ${theme}`);
     } catch (err) {
       console.error("Failed to generate lyrics:", err);
       setGeneratedLyrics("⚠️ Error generating lyrics. Try again.");
     } finally {
       setLoading(false);
+      setTimeout(() => setStatusMessage(""), 3000);
     }
   };
 
@@ -231,6 +237,12 @@ export default function Home() {
         onChange={(e) => setCustomTheme(e.target.value)}
         className="mb-4"
       />
+
+      {statusMessage && (
+        <div className="mb-4 text-sm text-gray-700 dark:text-gray-300">
+          {statusMessage}
+        </div>
+      )}
 
       <Button
         onClick={handleGenerateLyrics}
