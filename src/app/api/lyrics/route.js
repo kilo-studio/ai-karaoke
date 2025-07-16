@@ -67,7 +67,8 @@ export async function POST(req) {
       }
 
       const auddData = await auddRes.json();
-      lyrics = auddData?.result?.lyrics?.trim();
+      const firstResult = auddData?.result?.[0];
+      lyrics = firstResult?.lyrics?.trim();
     }
   } catch (lyricsError) {
     console.error("❌ Error fetching lyrics:", lyricsError);
