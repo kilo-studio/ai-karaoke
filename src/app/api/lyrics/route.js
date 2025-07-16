@@ -38,13 +38,32 @@ export async function POST(req) {
       const lyricsData = await lyricsRes.json();
       lyrics = lyricsData?.lyrics?.trim();
     } else if (provider === "genius") {
+      if (!process.env.GENIUS_ACCESS_TOKEN) {
+        console.error("❌ GENIUS_ACCESS_TOKEN is undefined in runtime!");
+      }
       const geniusRes = await fetch(`https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`, {
         headers: {
           Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`
         }
       });
+      if (!geniusRes.ok) {
+        const errorText = await geniusRes.text();
+        console.error("❌ Genius API error:", errorText);
+        return new Response(JSON.stringify({ lyrics: null, error: "Failed to fetch from Genius" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       const geniusData = await geniusRes.json();
       const songPath = geniusData.response?.hits?.[0]?.result?.path;
+
+      if (!songPath) {
+        console.warn("⚠️ No song path returned from Genius.");
+        return new Response(JSON.stringify({ lyrics: null, error: "Song not found on Genius." }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
       if (songPath) {
         const lyricsPage = await fetch(`https://genius.com${songPath}`);
