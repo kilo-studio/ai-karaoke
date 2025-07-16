@@ -34,6 +34,20 @@ export async function POST(req) {
 
       const lyricsData = await lyricsRes.json();
       lyrics = lyricsData?.lyrics?.trim();
+    } else if (provider === "flylyrics") {
+      const lyricsURL = `https://lyrics-api.fly.dev/?title=${encodeURIComponent(cleanTitle)}&artist=${encodeURIComponent(cleanArtist)}`;
+      console.log("📥 Requesting lyrics from flylyrics:", lyricsURL);
+
+      const lyricsRes = await fetch(lyricsURL);
+
+      if (!lyricsRes.ok) {
+        const errorText = await lyricsRes.text();
+        console.warn("⚠️ flylyrics returned error:", errorText);
+        return NextResponse.json({ lyrics: null, error: "Lyrics not found from flylyrics." }, { status: 404 });
+      }
+
+      const lyricsData = await lyricsRes.json();
+      lyrics = lyricsData?.lyrics?.trim();
     } else if (provider === "genius") {
       console.log("🔑 GENIUS_ACCESS_TOKEN:", process.env.GENIUS_ACCESS_TOKEN?.slice(0, 6));
       console.log("🔍 Genius search URL:", `https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);

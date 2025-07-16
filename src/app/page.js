@@ -54,7 +54,7 @@ export default function Home() {
   const [generatedLyrics, setGeneratedLyrics] = useState("");
   const [loading, setLoading] = useState(false);
   const [demoMode, setDemoMode] = useState(true);
-  const [lyricsProvider, setLyricsProvider] = useState("genius");
+  const [lyricsProvider, setLyricsProvider] = useState("lyrics.ovh");
   const [model, setModel] = useState("tngtech/deepseek-r1t2-chimera:free");
 
   const searchSongs = async (query) => {
@@ -163,8 +163,8 @@ export default function Home() {
           onChange={(e) => setLyricsProvider(e.target.value)}
           className="border p-1 rounded"
         >
-          <option value="genius">genius</option>
           <option value="lyrics.ovh">lyrics.ovh</option>
+          <option value="flylyrics">flylyrics</option>
         </select>
       </div>
 
