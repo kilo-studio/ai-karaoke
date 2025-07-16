@@ -72,7 +72,8 @@ export async function POST(req) {
       console.log("📄 Genius page fetched. Parsing HTML...");
 
       const $ = cheerio.load(html);
-      lyrics = $(".lyrics").text().trim() || $('[data-lyrics-container="true"]').text().trim();
+      const containers = $('[data-lyrics-container="true"]');
+      lyrics = containers.map((i, el) => $(el).text()).get().join('\n').trim();
       console.log("🎤 Extracted lyrics:", lyrics?.slice(0, 100));
     }
   } catch (lyricsError) {
