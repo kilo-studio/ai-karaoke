@@ -12,7 +12,9 @@ export async function POST(req) {
     });
   }
 
-  const { title, artist, theme, provider = "lyrics.ovh" } = await req.json();
+  const body = await req.json();
+  console.log("🧾 Parsed request:", body);
+  const { title, artist, theme, provider = "lyrics.ovh" } = body;
 
   const cleanTitle = title.replace(/\(.*?\)|\[.*?\]/g, '').split('feat.')[0].trim();
   const cleanArtist = artist.replace(/\(.*?\)|\[.*?\]/g, '').split('feat.')[0].trim();
@@ -38,6 +40,8 @@ export async function POST(req) {
       const lyricsData = await lyricsRes.json();
       lyrics = lyricsData?.lyrics?.trim();
     } else if (provider === "genius") {
+      console.log("🔑 GENIUS_ACCESS_TOKEN:", process.env.GENIUS_ACCESS_TOKEN?.slice(0, 6));
+      console.log("🔍 Genius search URL:", `https://api.genius.com/search?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}`);
       if (!process.env.GENIUS_ACCESS_TOKEN) {
         console.error("❌ GENIUS_ACCESS_TOKEN is undefined in runtime!");
       }
