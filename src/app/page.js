@@ -56,7 +56,11 @@ export default function Home() {
   const [demoMode, setDemoMode] = useState(true);
   const [lyricsProvider, setLyricsProvider] = useState("lyrics.ovh");
   const [model, setModel] = useState("tngtech/deepseek-r1t2-chimera:free");
-  const [statusMessage, setStatusMessage] = useState("");
+
+  const handleCancel = () => {
+    setLoading(false);
+    setGeneratedLyrics("⛔️ Generation cancelled.");
+  };
 
   const searchSongs = async (query) => {
     setSongQuery(query);
@@ -101,7 +105,6 @@ export default function Home() {
     if (!selectedSong) return;
     setLoading(true);
     setGeneratedLyrics("");
-    setStatusMessage(`🎵 Finding lyrics to "${selectedSong.title}"...`);
     const theme = customTheme || chosenTheme;
 
     if (demoMode) {
@@ -109,7 +112,6 @@ export default function Home() {
       setTimeout(() => {
         setGeneratedLyrics(lyrics);
         setLoading(false);
-        setStatusMessage("");
       }, 500);
       return;
     }
@@ -138,14 +140,11 @@ export default function Home() {
 
       const data = await response.json();
       setGeneratedLyrics(data.lyrics || "No lyrics returned.");
-      setStatusMessage("✅ Lyrics found!");
-      setStatusMessage(`🎤 Using ${lyricsProvider} to remix "${selectedSong.title}" to the theme: ${theme}`);
     } catch (err) {
       console.error("Failed to generate lyrics:", err);
       setGeneratedLyrics("⚠️ Error generating lyrics. Try again.");
     } finally {
       setLoading(false);
-      setTimeout(() => setStatusMessage(""), 3000);
     }
   };
 
@@ -238,18 +237,33 @@ export default function Home() {
         className="mb-4"
       />
 
-      {statusMessage && (
-        <div className="mb-4 text-sm text-gray-700 dark:text-gray-300">
-          {statusMessage}
+      {loading && (
+        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-4">
+          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+          <span>Generating lyrics...</span>
         </div>
       )}
 
-      <Button
-        onClick={handleGenerateLyrics}
-        disabled={loading || (!customTheme && !chosenTheme) || !selectedSong}
-      >
-        {loading ? "Generating..." : "Generate Lyrics"}
-      </Button>
+      {!loading && (
+        <Button
+          onClick={handleGenerateLyrics}
+          disabled={!customTheme && !chosenTheme || !selectedSong}
+        >
+          Generate Lyrics
+        </Button>
+      )}
+
+      {loading && (
+        <Button
+          onClick={handleCancel}
+          variant="outline"
+        >
+          Cancel
+        </Button>
+      )}
 
       {generatedLyrics && (
         <Card className="mt-6">

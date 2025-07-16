@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const lyricsCache = new Map();
+
 export async function POST(req) {
   console.log("📨 POST /api/lyrics received");
 
@@ -17,58 +19,70 @@ export async function POST(req) {
   const cleanTitle = title.replace(/\(.*?\)|\[.*?\]/g, '').split('feat.')[0].trim();
   const cleanArtist = artist.replace(/\(.*?\)|\[.*?\]/g, '').split('feat.')[0].trim();
 
+  const cacheKey = `${provider}::${cleanArtist}::${cleanTitle}`;
   let lyrics = null;
+  if (lyricsCache.has(cacheKey)) {
+    console.log("🗃️ Cache hit for lyrics");
+    lyrics = lyricsCache.get(cacheKey);
+  } else {
+    console.log("🆕 Cache miss for lyrics");
+  }
 
   try {
-    if (provider === "lyrics.ovh") {
-      const lyricsURL = `https://api.lyrics.ovh/v1/${encodeURIComponent(cleanArtist)}/${encodeURIComponent(cleanTitle)}`;
-      console.log("📥 Requesting lyrics from:", lyricsURL);
+    if (!lyrics) {
+      if (provider === "lyrics.ovh") {
+        const lyricsURL = `https://api.lyrics.ovh/v1/${encodeURIComponent(cleanArtist)}/${encodeURIComponent(cleanTitle)}`;
+        console.log("📥 Requesting lyrics from:", lyricsURL);
 
-      const lyricsRes = await fetch(lyricsURL);
+        const lyricsRes = await fetch(lyricsURL);
 
-      if (!lyricsRes.ok) {
-        const html = await lyricsRes.text();
-        console.warn("⚠️ Lyrics.ovh returned non-JSON response:", html);
-        return NextResponse.json({ lyrics: null, error: "Lyrics not found." }, { status: 404 });
+        if (!lyricsRes.ok) {
+          const html = await lyricsRes.text();
+          console.warn("⚠️ Lyrics.ovh returned non-JSON response:", html);
+          return NextResponse.json({ lyrics: null, error: "Lyrics not found." }, { status: 404 });
+        }
+
+        const lyricsData = await lyricsRes.json();
+        lyrics = lyricsData?.lyrics?.trim();
+        if (lyrics) lyricsCache.set(cacheKey, lyrics);
+      } else if (provider === "flylyrics") {
+        const lyricsURL = `https://lyrics-api.fly.dev/?title=${encodeURIComponent(cleanTitle)}&artist=${encodeURIComponent(cleanArtist)}`;
+        console.log("📥 Requesting lyrics from flylyrics:", lyricsURL);
+
+        const lyricsRes = await fetch(lyricsURL);
+
+        if (!lyricsRes.ok) {
+          const errorText = await lyricsRes.text();
+          console.warn("⚠️ flylyrics returned error:", errorText);
+          return NextResponse.json({ lyrics: null, error: "Lyrics not found from flylyrics." }, { status: 404 });
+        }
+
+        const lyricsData = await lyricsRes.json();
+        lyrics = lyricsData?.lyrics?.trim();
+        if (lyrics) lyricsCache.set(cacheKey, lyrics);
+      } else if (provider === "audd") {
+        const auddApiKey = process.env.AUDD_API_KEY;
+        if (!auddApiKey) {
+          console.error("❌ AUDD_API_KEY is undefined!");
+          return NextResponse.json({ lyrics: null, error: "AUDD_API_KEY not set" }, { status: 500 });
+        }
+
+        const auddURL = `https://api.audd.io/findLyrics/?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}&api_token=${auddApiKey}`;
+        console.log("📥 Requesting lyrics from AudD:", auddURL);
+
+        const auddRes = await fetch(auddURL);
+
+        if (!auddRes.ok) {
+          const errorText = await auddRes.text();
+          console.warn("⚠️ AudD returned error:", errorText);
+          return NextResponse.json({ lyrics: null, error: "Lyrics not found from AudD." }, { status: 404 });
+        }
+
+        const auddData = await auddRes.json();
+        const firstResult = auddData?.result?.[0];
+        lyrics = firstResult?.lyrics?.trim();
+        if (lyrics) lyricsCache.set(cacheKey, lyrics);
       }
-
-      const lyricsData = await lyricsRes.json();
-      lyrics = lyricsData?.lyrics?.trim();
-    } else if (provider === "flylyrics") {
-      const lyricsURL = `https://lyrics-api.fly.dev/?title=${encodeURIComponent(cleanTitle)}&artist=${encodeURIComponent(cleanArtist)}`;
-      console.log("📥 Requesting lyrics from flylyrics:", lyricsURL);
-
-      const lyricsRes = await fetch(lyricsURL);
-
-      if (!lyricsRes.ok) {
-        const errorText = await lyricsRes.text();
-        console.warn("⚠️ flylyrics returned error:", errorText);
-        return NextResponse.json({ lyrics: null, error: "Lyrics not found from flylyrics." }, { status: 404 });
-      }
-
-      const lyricsData = await lyricsRes.json();
-      lyrics = lyricsData?.lyrics?.trim();
-    } else if (provider === "audd") {
-      const auddApiKey = process.env.AUDD_API_KEY;
-      if (!auddApiKey) {
-        console.error("❌ AUDD_API_KEY is undefined!");
-        return NextResponse.json({ lyrics: null, error: "AUDD_API_KEY not set" }, { status: 500 });
-      }
-
-      const auddURL = `https://api.audd.io/findLyrics/?q=${encodeURIComponent(`${cleanTitle} ${cleanArtist}`)}&api_token=${auddApiKey}`;
-      console.log("📥 Requesting lyrics from AudD:", auddURL);
-
-      const auddRes = await fetch(auddURL);
-
-      if (!auddRes.ok) {
-        const errorText = await auddRes.text();
-        console.warn("⚠️ AudD returned error:", errorText);
-        return NextResponse.json({ lyrics: null, error: "Lyrics not found from AudD." }, { status: 404 });
-      }
-
-      const auddData = await auddRes.json();
-      const firstResult = auddData?.result?.[0];
-      lyrics = firstResult?.lyrics?.trim();
     }
   } catch (lyricsError) {
     console.error("❌ Error fetching lyrics:", lyricsError);
@@ -121,7 +135,10 @@ ${lyrics}`;
         return NextResponse.json({ lyrics: null }, { status: 500 });
       }
 
-      return NextResponse.json({ lyrics: aiLyrics }, { status: 200 });
+      return NextResponse.json({
+        appleMusicUrl: `https://music.apple.com/search?term=${encodeURIComponent(`${artist} ${title}`)}`,
+        lyrics: aiLyrics
+      }, { status: 200 });
     } else {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -145,7 +162,10 @@ ${lyrics}`;
         return NextResponse.json({ lyrics: null }, { status: 500 });
       }
 
-      return NextResponse.json({ lyrics: aiLyrics }, { status: 200 });
+      return NextResponse.json({
+        appleMusicUrl: `https://music.apple.com/search?term=${encodeURIComponent(`${artist} ${title}`)}`,
+        lyrics: aiLyrics
+      }, { status: 200 });
     }
   } catch (err) {
     console.error("❌ Error during AI request:", err);
